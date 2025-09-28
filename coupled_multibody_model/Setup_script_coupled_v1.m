@@ -59,26 +59,27 @@ F_i_r = m_i*g-F_h;
 %% inputs
 figure('Position', [200, 200, 1400, 500])
 t1 = tiledlayout(1,3);
-nexttile
-plot(out.time, out.inputs(:,1))
-xlabel('Time [s]')
-ylabel('\delta_f [rad]')
-ylim([min(out.inputs(:,1)) - 0.1*(max(out.inputs(:,1)) - min(out.inputs(:,1)))
-      max(out.inputs(:,1)) + 0.1*(max(out.inputs(:,1)) - min(out.inputs(:,1)))]);
 
-nexttile
-plot(out.time, out.inputs(:,2))
-xlabel('Time [s]')
-ylabel('Throttle Setpoint [-]')
-ylim([min(out.inputs(:,2)) - 0.1*(max(out.inputs(:,2)) - min(out.inputs(:,2)))
-      max(out.inputs(:,2)) + 0.1*(max(out.inputs(:,2)) - min(out.inputs(:,2)))]);
+labels = {'\delta_f [rad]', 'Throttle Setpoint [-]', 'Braking Setpoint [-]'};
 
-nexttile
-plot(out.time, out.inputs(:,3))
-xlabel('Time [s]')
-ylabel('Braking Setpoint [-]')
-ylim([min(out.inputs(:,3)) - 0.1*(max(out.inputs(:,3)) - min(out.inputs(:,3)))
-      max(out.inputs(:,3)) + 0.1*(max(out.inputs(:,3)) - min(out.inputs(:,3)))]);
+for i = 1:3
+    nexttile
+    plot(out.time, out.inputs(:,i))
+    xlabel('Time [s]')
+    ylabel(labels{i})
+
+    % Compute y-limits with 10% padding, handle constant signals
+    ymin = min(out.inputs(:,i));
+    ymax = max(out.inputs(:,i));
+
+    if ymax == ymin
+        pad = 0.1 * abs(ymax) + 1e-3; % give small pad even if value is 0
+        ylim([ymin - pad, ymax + pad])
+    else
+        pad = 0.1 * (ymax - ymin);
+        ylim([ymin - pad, ymax + pad])
+    end
+end
 
 title(t1, 'System Inputs', 'FontName', 'Times New Roman', 'FontSize', 16);
 set(findall(gcf,'-property','FontName'), 'FontName', 'Times New Roman');

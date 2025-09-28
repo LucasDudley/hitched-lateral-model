@@ -53,9 +53,13 @@ F_t_r = (m_t*g*a + F_h*(b+a))/(a+b);
 F_i_r = m_i*g-F_h;
 
 %% Animations
-figure()
+figure('Color', 'w')
 axis equal;
 hold on;
+
+set(groot, 'defaultAxesFontName', 'Times New Roman')
+set(groot, 'defaultTextFontName', 'Times New Roman')
+
 time = out.time;
 X_vehicle = out.global_XY_t(:,1);
 Y_vehicle = out.global_XY_t(:,2);
@@ -65,12 +69,11 @@ Y_implement = out.global_XY_i(:,2);
 phi_implement = out.phi(:,2);
 delta_f = out.inputs(:,1);
 
-% Define target frame rate (Hz)
-target_fps = 50;
+% Target frame rate
+target_fps = 25;
 dt = 1 / target_fps;
 
-% Interpolate the data to run at the set (consistent) frame rate since
-% variable step is used.
+% Interpolate to constant frame rate
 time_interp = min(time):dt:max(time);
 X_vehicle_interp = interp1(time, X_vehicle, time_interp, 'linear');
 Y_vehicle_interp = interp1(time, Y_vehicle, time_interp, 'linear');
@@ -80,15 +83,24 @@ Y_implement_interp = interp1(time, Y_implement, time_interp, 'linear');
 phi_implement_interp = interp1(time, phi_implement, time_interp, 'linear');
 delta_f_interp = interp1(time, delta_f, time_interp, 'linear');
 
-% Set axis limits
+% Axis limits
 x_limits = [min([X_vehicle; X_implement]) - 3, max([X_vehicle; X_implement]) + 3];
 y_limits = [min([Y_vehicle; Y_implement]) - 3, max([Y_vehicle; Y_implement]) + 3];
 xlim(x_limits);
 ylim(y_limits);
+grid on
+box off
+xlabel('X-Pos [m]', 'FontWeight', 'bold')
+ylabel('Y-Pos [m]', 'FontWeight', 'bold')
+
+% Video setup (MP4)
+v = VideoWriter('vehicle_animation.mp4','MPEG-4');
+v.FrameRate = target_fps;
+open(v)
 
 for k = 1:length(time_interp)
     cla;
-    %positions
+    % positions
     vehicle_x = [X_vehicle_interp(k) + a * cos(phi_vehicle_interp(k))
                  X_vehicle_interp(k) - b * cos(phi_vehicle_interp(k))];
     vehicle_y = [Y_vehicle_interp(k) + a * sin(phi_vehicle_interp(k))
@@ -100,21 +112,26 @@ for k = 1:length(time_interp)
     wheel_angle = phi_vehicle_interp(k) + delta_f_interp(k);
     wheel_front_x = vehicle_x(1) + r * cos(wheel_angle);
     wheel_front_y = vehicle_y(1) + r * sin(wheel_angle);
-    wheel_rear_x = vehicle_x(1) - (r) * cos(wheel_angle);
-    wheel_rear_y = vehicle_y(1) - (r) * sin(wheel_angle);
-    
+    wheel_rear_x = vehicle_x(1) - r * cos(wheel_angle);
+    wheel_rear_y = vehicle_y(1) - r * sin(wheel_angle);
 
     % Plot
-     plot(vehicle_x, vehicle_y, 'b', 'LineWidth', 2); % Vehicle plot
-     plot(implement_x, implement_y, 'r', 'LineWidth', 2); % Implement plot
-    plot([wheel_front_x, wheel_rear_x], [wheel_front_y, wheel_rear_y], 'k', 'LineWidth', 2);
-    title(sprintf('Time: %.2f s', time_interp(k)));
+    plot(vehicle_x, vehicle_y, 'b', 'LineWidth', 2); % Vehicle plot
+    plot(implement_x, implement_y, 'r', 'LineWidth', 2); % Implement plot
+    plot([wheel_front_x, wheel_rear_x], [wheel_front_y, wheel_rear_y], ...
+         'k', 'LineWidth', 2);
+    title(sprintf('Time: %.2f s', time_interp(k)), ...
+          'FontWeight', 'bold', 'FontName', 'Times New Roman');
 
-    pause(dt*0.5);
+    % Capture frame for video
+    frame = getframe(gcf);
+    writeVideo(v, frame);
     drawnow;
 end
 
+close(v);
 hold off;
+
 
 
 
